@@ -1,0 +1,7 @@
+1 create a database name "bookdatabase"
+2 create table users
+	1. id - primary key --- just clike on AI button  
+	2. email
+	3. password
+	4. college
+	5. college_address
