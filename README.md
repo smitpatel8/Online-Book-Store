@@ -1,31 +1,28 @@
-graph TD
-    %% Styles
-    classDef external fill:#f9f,stroke:#333,stroke-width:2px;
-    classDef skygeni fill:#e1f5fe,stroke:#01579b,stroke-width:2px;
-    classDef storage fill:#fff9c4,stroke:#fbc02d,stroke-width:2px;
-    classDef alert fill:#ffcdd2,stroke:#c62828,stroke-width:2px;
+sequenceDiagram
+    participant CRM as Customer CRM
+    participant Ingest as Ingestion Service
+    participant Model as AI Model (RF)
+    participant DB as SkyGeni DB
+    participant Slack as Notification System
 
-    subgraph "Customer Environment"
-        CRM[Customer CRM<br/>(Salesforce / HubSpot)]:::external
-        User[Sales Leader<br/>(Slack / Dashboard)]:::external
+    Note over CRM, Slack: Nightly Batch Run (2:00 AM)
+
+    Ingest->>CRM: Request "Open Opportunities" (Last 24h)
+    CRM-->>Ingest: Returns JSON [Deal A, Deal B...]
+    
+    loop For Each Deal
+        Ingest->>Ingest: Validate Data & Calc Features
+        Ingest->>Model: Predict_Proba(Features)
+        Model-->>Ingest: Return Risk: 85% (Critical)
+        
+        Ingest->>DB: Fetch Previous Score
+        DB-->>Ingest: Previous Risk: 60%
+        
+        Note right of Ingest: Risk jumped >15%? YES.
+        Ingest->>DB: Save New Score (85%)
     end
 
-    subgraph "SkyGeni Cloud (AWS/GCP)"
-        direction TB
-        Connector[Integration Service]:::skygeni
-        Queue[Message Queue]:::storage
-        Worker[ETL Worker]:::skygeni
-        ModelService[Model Service]:::skygeni
-        AppDB[(Operational DB)]:::storage
-        AlertEngine[Notification Engine]:::alert
+    par Parallel Actions
+        Ingest->>Slack: 🚨 ALERT: Deal A Spiked to Critical Risk!
+        Ingest->>CRM: Update Field "SkyGeni_Score" = 85
     end
-
-    CRM -- "1. Pull Delta Updates" --> Connector
-    Connector --> Queue
-    Queue --> Worker
-    Worker -- "Fetch Score" --> ModelService
-    ModelService --> Worker
-    Worker -- "Save Result" --> AppDB
-    AppDB -- "Trigger Check" --> AlertEngine
-    AlertEngine -- "High Risk Alert" --> User
-    AppDB -- "Sync Score" --> CRM
