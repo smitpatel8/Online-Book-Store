@@ -1,4 +1,4 @@
-```mermaid
+mermaid
 graph TD
     %% Styles
     classDef external fill:#f9f,stroke:#333,stroke-width:2px;
@@ -27,4 +27,3 @@ graph TD
     AppDB -- "Trigger Check" --> AlertEngine
     AlertEngine -- "High Risk Alert" --> User
     AppDB -- "Sync Score" --> CRM
-```
